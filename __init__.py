@@ -1,13 +1,3 @@
-bl_info = {
-    "name": "Spreadsheet Data Importer",
-    "author": "Simon Broggi",
-    "version": (0, 2, 0),
-    "blender": (3, 3, 0),
-    "location": "File > Import-Export",
-    "description": "Import data to spreadsheet for use with geometry nodes",
-    "category": "Import-Export",
-}
-
 import bpy
 from bpy_extras.io_utils import ImportHelper
 import json
@@ -21,17 +11,17 @@ def read_json_data(context, filepath, data_array_name, data_fields, encoding='ut
 
     f = open(filepath, 'r', encoding=encoding)
     data = json.load(f)
-    
-    data_array = data[data_array_name] 
-    
+
+    data_array = data[data_array_name]
+
     # name of the object and mesh
     data_name = "imported_data"
-    
+
     mesh = bpy.data.meshes.new(name="json_"+data_array_name)
     mesh.vertices.add(len(data_array))
     #coordinates = np.ones((len(data_array)*3))
     #mesh.vertices.foreach_set("co", coordinates)
-    
+
     # https://docs.blender.org/api/current/bpy.types.Attribute.html#bpy.types.Attribute
 
     # In JSON an empty string is a valid key.
@@ -68,7 +58,7 @@ def read_json_data(context, filepath, data_array_name, data_fields, encoding='ut
     file_name = bpy.path.basename(filepath)
     object_name = bpy.path.display_name(file_name)
     create_object(mesh, object_name)
-    
+
     report_message = "Imported {num_values} from \"{file_name}\"".format(num_values=i, file_name=file_name)
 
     return report_message, report_type
@@ -82,7 +72,7 @@ def read_csv_data(context, filepath, data_fields, encoding='latin-1', delimiter=
     mesh = bpy.data.meshes.new(name="csv_data")
 
     add_data_fields(mesh, data_fields)
-    
+
     with open(filepath, 'r', encoding=encoding, newline='') as csv_file:
         #print("importing {file} without the first {lines}".format(file=filepath, lines=leading_liens_to_discard))
         discarded_leading_lines = 0
@@ -98,7 +88,7 @@ def read_csv_data(context, filepath, data_fields, encoding='latin-1', delimiter=
         try:
             for row in csv_reader:
                 # make sure it's the right data type
-                # raises ValueError if the datatype can not be converted 
+                # raises ValueError if the datatype can not be converted
                 for data_field in data_fields:
                     value = row[data_field.name]
                     if(data_field.dataType == 'FLOAT'):
@@ -108,7 +98,7 @@ def read_csv_data(context, filepath, data_fields, encoding='latin-1', delimiter=
                     elif(data_field.dataType == 'BOOLEAN'):
                         value = bool(value)
                     row[data_field.name] = value
-                
+
                 mesh.vertices.add(1)
                 mesh.update() #might be slow, but does it matter?...
 
@@ -240,7 +230,7 @@ class ImportSpreadsheetData(bpy.types.Operator, ImportHelper):
         default="",
         options={'HIDDEN'},
     )
-    
+
     json_encoding: bpy.props.StringProperty(
         name="Encoding",
         description="Encoding of the JSON File",
@@ -280,7 +270,7 @@ class ImportSpreadsheetData(bpy.types.Operator, ImportHelper):
             report_message, report_type = read_json_data(context, self.filepath, self.array_name, self.data_fields, self.json_encoding)
         elif(self.filepath.endswith('.csv')):
             report_message, report_type = read_csv_data(context, self.filepath, self.data_fields, self.csv_encoding, self.csv_delimiter, self.csv_leading_lines_to_discard)
-        
+
         self.report({report_type}, report_message)
         return {'FINISHED'}
 
@@ -294,7 +284,7 @@ class AddDataFieldOperator(bpy.types.Operator):
         item = operator.data_fields.add()
 
         operator.active_data_field_index = len(operator.data_fields) - 1
-        
+
         return {'FINISHED'}
 
 class RemoveDataFieldOperator(bpy.types.Operator):
@@ -366,7 +356,7 @@ class SPREADSHEET_PT_field_names(bpy.types.Panel):
         layout = self.layout
 
         #layout.template_list("UI_UL_list", "", operator, "data_fields", operator, )
-        
+
         # success with this tutorial!
         # https://sinestesia.co/blog/tutorials/using-uilists-in-blender/
 
@@ -381,7 +371,7 @@ class SPREADSHEET_PT_field_names(bpy.types.Panel):
         col = row.column(align=True)
         col.operator(AddDataFieldOperator.bl_idname, icon='ADD', text="")
         col.operator(RemoveDataFieldOperator.bl_idname, icon='REMOVE', text="")
-        
+
 blender_classes = [
     SPREADSHEET_UL_data_fields,
     DataFieldPropertiesGroup,
@@ -408,4 +398,3 @@ def unregister():
     for blender_class in blender_classes:
         bpy.utils.unregister_class(blender_class)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-
